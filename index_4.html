@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteiro CRC — trilha de estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#ECE7DA;
+    --paper-panel:#FBF9F3;
+    --ink:#1F2A2E;
+    --ink-soft:#5B655F;
+    --line:#C9C0A8;
+    --leather:#6E4322;
+    --leather-dark:#4C2E17;
+    --gold:#B4842A;
+    --gold-soft:#E8D6AE;
+    --sage:#4B6A50;
+    --sage-soft:#DCE7DC;
+    --rust:#9C4B34;
+    --rust-soft:#F1DDD3;
+    --link:#3B5C77;
+    --link-soft:#DCE5EA;
+    --radius:4px;
+    --shadow:0 1px 2px rgba(31,42,46,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);font-family:'IBM Plex Sans', sans-serif;}
+
+  #crc-app{
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper) 0%, var(--paper) 100%),
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(110,67,34,0.045) 28px);
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    display:flex;
+    min-height:100vh;
+    max-width:1260px;
+    margin:0 auto;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{ width:230px; flex-shrink:0; background:var(--leather-dark); color:#EFE6D6; padding:20px 0 14px; display:flex; flex-direction:column; }
+  .sidebar-head{ padding:0 16px 14px; border-bottom:1px solid rgba(239,230,214,0.18); margin-bottom:6px; }
+  .sidebar-head .stamp{ display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:9.5px; letter-spacing:1.5px; color:var(--gold-soft); border:1px solid var(--gold-soft); padding:2px 6px; border-radius:2px; margin-bottom:9px; }
+  .sidebar-head h1{ font-family:'Source Serif 4', serif; font-size:18px; font-weight:600; margin:0 0 4px; line-height:1.25; }
+  .sidebar-head p{ font-size:11px; color:#C9BBA0; margin:0; }
+
+  .nav-section-lbl{ font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:#B7A688; padding:10px 16px 4px; }
+
+  .top-nav{ padding:2px 0 6px; }
+  .week-nav{ flex:1; overflow-y:auto; padding:2px 0; }
+  .week-btn{ width:100%; text-align:left; background:none; border:none; color:#DCCFB4; font-family:'IBM Plex Sans', sans-serif; font-size:12px; padding:8px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; border-left:3px solid transparent; transition:background .12s ease, border-color .12s ease; }
+  .week-btn:hover{ background:rgba(239,230,214,0.06); }
+  .week-btn.active{ background:rgba(239,230,214,0.1); border-left-color:var(--gold); color:#FBF6EA; font-weight:500; }
+  .week-num{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--gold-soft); width:18px; flex-shrink:0; }
+  .week-btn span.wt{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .week-dot{ width:7px;height:7px;border-radius:50%; background:rgba(239,230,214,0.25); flex-shrink:0; }
+  .week-dot.complete{ background:var(--sage-soft); }
+  .week-dot.partial{ background:var(--gold-soft); }
+  .week-dot.overdue{ background:var(--rust); }
+
+  .sidebar-foot{ padding:12px 16px 0; border-top:1px solid rgba(239,230,214,0.18); font-family:'IBM Plex Mono', monospace; font-size:10px; color:#C9BBA0; }
+  .foot-row{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+  .foot-row label{ flex-shrink:0; }
+  .foot-row input{
+    width:52px; background:rgba(239,230,214,0.08); border:1px solid rgba(239,230,214,0.25);
+    color:#FBF6EA; border-radius:3px; font-family:'IBM Plex Mono', monospace; font-size:10.5px;
+    padding:2px 4px; text-align:right;
+  }
+  .foot-hint{ font-size:9px; color:#9C8D72; margin-top:4px; line-height:1.5; }
+
+  /* ---------- MAIN ---------- */
+  .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  .topbar{ padding:18px 26px 14px; border-bottom:1px solid var(--line); background:var(--paper-panel); display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .topbar-left .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:1px; color:var(--ink-soft); text-transform:uppercase; margin-bottom:3px; }
+  .topbar-left h2{ font-family:'Source Serif 4', serif; font-size:22px; margin:0; font-weight:600; }
+  .topbar-left .sub{ font-size:12px; color:var(--ink-soft); margin-top:3px; }
+  .topbar-left .sub b{ color:var(--leather); }
+  .countdown{ text-align:right; }
+  .countdown .num{ font-family:'IBM Plex Mono', monospace; font-size:30px; font-weight:600; color:var(--rust); line-height:1; }
+  .countdown .lbl{ font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.6px; }
+
+  .progress-strip{ padding:10px 26px; background:var(--paper-panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; }
+  .progress-strip .bar-track{ flex:1; height:6px; background:var(--gold-soft); border-radius:4px; overflow:hidden; }
+  .progress-strip .bar-fill{ height:100%; background:var(--leather); transition:width .3s ease; }
+  .progress-strip .pct{ font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--leather-dark); width:36px; text-align:right; }
+
+  .content{ flex:1; overflow-y:auto; padding:18px 26px 30px; }
+
+  /* overdue banner */
+  .overdue-banner{
+    background:var(--rust-soft); border:1px solid var(--rust); border-radius:var(--radius);
+    padding:10px 14px; margin-bottom:16px; font-size:12.5px; color:var(--leather-dark);
+  }
+  .overdue-banner .head{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; gap:10px; }
+  .overdue-banner .head b{ color:var(--rust); }
+  .overdue-list{ display:none; margin-top:8px; flex-wrap:wrap; gap:5px; }
+  .overdue-list.open{ display:flex; }
+  .overdue-tag{ font-size:11px; background:#fff; border:1px solid var(--rust); color:var(--rust); padding:3px 8px; border-radius:20px; cursor:pointer; }
+
+  /* priority filter chips */
+  .filter-row{ display:flex; align-items:center; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  .filter-row .flbl{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-right:2px; }
+  .filter-chip{
+    font-size:11px; padding:4px 10px; border-radius:20px; cursor:pointer; border:1px solid var(--line);
+    background:var(--paper-panel); color:var(--ink-soft);
+  }
+  .filter-chip.active{ background:var(--leather); color:#fff; border-color:var(--leather); }
+
+  .week-header{ margin-bottom:2px; }
+  .week-header h3{ font-family:'Source Serif 4', serif; font-size:18px; margin:0 0 2px; }
+  .week-note{ font-size:12px; color:var(--ink-soft); margin:0 0 14px; }
+
+  /* weekly day-by-day schedule */
+  .day-schedule{ margin-bottom:18px; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--paper-panel); box-shadow:var(--shadow); }
+  .day-schedule-title{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); padding:8px 12px 4px; }
+  .day-row{ display:flex; align-items:center; gap:10px; padding:6px 12px; border-top:1px solid var(--line); font-size:12px; }
+  .day-row:first-of-type{ border-top:none; }
+  .day-row .day-name{ width:96px; flex-shrink:0; font-weight:500; color:var(--leather); }
+  .day-row .day-dur{ font-family:'IBM Plex Mono', monospace; font-size:10px; background:var(--link-soft); color:var(--link); padding:2px 7px; border-radius:20px; flex-shrink:0; white-space:nowrap; }
+  .day-row .day-activity{ flex:1; color:var(--ink); }
+  .day-row.rest .day-activity{ color:var(--ink-soft); font-style:italic; }
+  .day-row.sim .day-dur{ background:var(--rust-soft); color:var(--rust); }
+  .day-row.rest .day-dur{ background:var(--sage-soft); color:var(--sage); }
+
+  /* per-topic minute breakdown */
+  .steps-wrap{ margin-bottom:10px; }
+  .steps-wrap .k{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:5px; }
+  .step-row{ display:flex; align-items:center; gap:8px; padding:3px 0; font-size:12px; }
+  .step-row .step-time{ font-family:'IBM Plex Mono', monospace; font-size:10px; color:var(--leather); width:44px; flex-shrink:0; text-align:right; }
+  .step-row .step-bar{ height:5px; background:var(--gold-soft); border-radius:3px; flex-shrink:0; }
+  .step-row .step-label{ color:var(--ink); }
+
+  .topics-spine{ position:relative; padding-left:14px; border-left:2px solid var(--gold-soft); }
+  .topic-card{ position:relative; margin-bottom:16px; }
+  .topic-card::before{ content:''; position:absolute; left:-19px; top:8px; width:9px;height:9px; border-radius:50%; background:var(--gold); border:2px solid var(--paper); }
+  .topic-card.done::before{ background:var(--sage); }
+  .topic-card.hidden{ display:none; }
+
+  .topic-head{ display:flex; align-items:center; gap:10px; cursor:pointer; flex-wrap:wrap; }
+  .topic-head input[type=checkbox]{ width:16px;height:16px; accent-color:var(--sage); cursor:pointer; flex-shrink:0; }
+  .topic-name{ font-size:14px; font-weight:500; }
+  .topic-name.done{ text-decoration:line-through; color:var(--ink-soft); font-weight:400; }
+  .meta-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-left:auto; }
+  .priority{ font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.3px; text-transform:uppercase; padding:2px 6px; border-radius:20px; white-space:nowrap; }
+  .priority.alta{ background:var(--rust-soft); color:var(--rust); }
+  .priority.media{ background:var(--gold-soft); color:var(--leather); }
+  .priority.baixa{ background:var(--sage-soft); color:var(--sage); }
+  .time-pill{ font-family:'IBM Plex Mono', monospace; font-size:9px; background:var(--link-soft); color:var(--link); padding:2px 6px; border-radius:20px; white-space:nowrap; }
+
+  .topic-detail{ margin:8px 0 0 26px; padding:10px 14px; background:var(--paper-panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); display:none; font-size:12.5px; }
+  .topic-detail.open{ display:block; }
+  .detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px 16px; margin-bottom:10px; }
+  .detail-item .k{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:2px; }
+  .detail-item .v{ color:var(--ink); line-height:1.4; }
+  .related-wrap{ margin-bottom:10px; }
+  .related-wrap .k{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:4px; }
+  .related-tags{ display:flex; flex-wrap:wrap; gap:5px; }
+  .related-tag{ font-size:11px; background:var(--link-soft); color:var(--link); padding:3px 8px; border-radius:20px; cursor:pointer; border:1px solid transparent; }
+  .related-tag:hover{ border-color:var(--link); }
+  .tip-box{ background:var(--gold-soft); border-left:3px solid var(--gold); padding:7px 10px; border-radius:2px; font-size:12px; color:var(--leather-dark); margin-bottom:10px; }
+  .tip-box b{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:2px; color:var(--leather); }
+  .note-area textarea{ width:100%; min-height:52px; resize:vertical; font-family:'IBM Plex Sans', sans-serif; font-size:12px; padding:7px 9px; border:1px solid var(--line); border-radius:3px; background:#fff; color:var(--ink); }
+  .note-area textarea:focus{ outline:1.5px solid var(--gold); }
+  .note-area .k{ font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:3px; }
+
+  .reset-link{ font-size:10px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; background:none; border:none; padding:0; margin-top:6px; }
+
+  /* overview table */
+  .overview-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .overview-table th{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); padding:6px 8px; border-bottom:1px solid var(--line); }
+  .overview-table td{ padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .overview-table tr.hidden{ display:none; }
+  .overview-table tr:hover td{ background:rgba(180,132,42,0.06); }
+  .ov-name{ cursor:pointer; }
+  .ov-name:hover{ text-decoration:underline; color:var(--leather); }
+  .ov-check{ width:16px;height:16px; accent-color:var(--sage); cursor:pointer; }
+
+  /* simulados view */
+  .sim-form{ background:var(--paper-panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:20px; box-shadow:var(--shadow); }
+  .sim-form h4{ margin:0 0 10px; font-family:'Source Serif 4', serif; font-size:15px; }
+  .sim-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+  .sim-field label{ display:block; font-family:'IBM Plex Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); margin-bottom:3px; }
+  .sim-field input, .sim-field textarea{ width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:3px; font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; background:#fff; color:var(--ink); }
+  .sim-field textarea{ min-height:40px; resize:vertical; }
+  .sim-submit{ background:var(--leather); color:#fff; border:none; padding:8px 16px; border-radius:3px; font-size:12.5px; cursor:pointer; font-family:'IBM Plex Sans', sans-serif; }
+  .sim-submit:hover{ background:var(--leather-dark); }
+
+  .sim-table{ width:100%; border-collapse:collapse; font-size:12px; margin-bottom:22px; }
+  .sim-table th{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size:9px; text-transform:uppercase; color:var(--ink-soft); padding:6px 8px; border-bottom:1px solid var(--line); }
+  .sim-table td{ padding:7px 8px; border-bottom:1px solid var(--line); }
+  .sim-bar-track{ width:100px; height:6px; background:var(--gold-soft); border-radius:4px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px; }
+  .sim-bar-fill{ height:100%; background:var(--sage); }
+  .sim-del{ background:none; border:none; color:var(--rust); cursor:pointer; font-size:11px; text-decoration:underline; }
+
+  .subj-analysis{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:10px; }
+  .subj-card{ background:var(--paper-panel); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; box-shadow:var(--shadow); }
+  .subj-card h5{ margin:0 0 8px; font-family:'IBM Plex Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:.4px; }
+  .subj-card.critico h5{ color:var(--rust); }
+  .subj-card.fraco h5{ color:var(--leather); }
+  .subj-card.forte h5{ color:var(--sage); }
+  .subj-card ul{ margin:0; padding-left:16px; font-size:12px; line-height:1.7; }
+  .subj-card .empty{ font-size:11.5px; color:var(--ink-soft); font-style:italic; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+  .flash{ animation:flashPulse 1s ease; }
+  @keyframes flashPulse{ 0%{ background:var(--gold-soft); } 100%{ background:var(--paper-panel); } }
+
+  @media (max-width:760px){
+    #crc-app{ flex-direction:column; }
+    .sidebar{ width:100%; padding:10px; }
+    .sidebar-head{ display:none; }
+    .week-nav{ display:flex; flex-wrap:wrap; flex:none; overflow-x:auto; }
+    .top-nav{ display:flex; gap:4px; }
+    .week-btn{ padding:7px 10px; white-space:nowrap; }
+    .week-btn span.wt{ max-width:110px; }
+    .detail-grid, .sim-grid, .subj-analysis{ grid-template-columns:1fr; }
+    .sidebar-foot{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="crc-app">
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <span class="stamp">CFC · EXAME</span>
+      <h1>Roteiro CRC</h1>
+      <p>Trilha de estudos — prova em 27/09/2026</p>
+    </div>
+
+    <div class="top-nav" id="topNav"></div>
+    <div class="nav-section-lbl">Semanas</div>
+    <div class="week-nav" id="weekNav"></div>
+
+    <div class="sidebar-foot" id="sidebarFoot">carregando…</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="eyebrow" id="viewLabel">Semana 1</div>
+        <h2 id="viewTitle">Roteiro de estudos</h2>
+        <div class="sub" id="viewSub"></div>
+      </div>
+      <div class="countdown">
+        <div class="num" id="countdownNum">--</div>
+        <div class="lbl">dias até a prova</div>
+      </div>
+    </div>
+
+    <div class="progress-strip">
+      <div class="bar-track"><div class="bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="pct" id="progressPct">0%</div>
+    </div>
+
+    <div class="content" id="content">
+      <p style="font-size:12px;color:var(--ink-soft);">Carregando seu progresso…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const EXAM_DATE = new Date('2026-09-27T08:00:00');
+  const STORAGE_KEY = 'crc_tracker_v3';
+
+  // ---------- Storage abstraction ----------
+  // Works inside Claude artifacts (window.storage) AND when deployed standalone
+  // (e.g. Vercel) by falling back to localStorage in the browser.
+  const Persist = {
+    async get(key){
+      if(window.storage){
+        try{ const r = await window.storage.get(key, false); return r ? r.value : null; }
+        catch(e){ return null; }
+      }
+      try{ return localStorage.getItem(key); }catch(e){ return null; }
+    },
+    async set(key, value){
+      if(window.storage){
+        try{ return await window.storage.set(key, value, false); }
+        catch(e){ console.error('storage.set failed', e); return null; }
+      }
+      try{ localStorage.setItem(key, value); return true; }catch(e){ return null; }
+    }
+  };
+
+  // ---------- Curriculum data ----------
+  const WEEKS = [
+    { n:1, range:'13/07 – 19/07', title:'Contabilidade Geral I', note:'Base de tudo — sem isso, nada mais faz sentido.',
+      topics:[
+        { name:'Patrimônio: ativo, passivo e PL', p:'alta', time:'35 min',
+          video:'busque "patrimônio contábil ativo passivo PL explicado" — vídeos de 10-15 min de canais de contabilidade básica',
+          note:'Desenhe o esquema Ativo = Passivo + PL com 3 exemplos de empresas diferentes (comércio, serviço, indústria)',
+          onde:'Caderno de teoria — 1ª página, vai ser sua referência o ano todo',
+          tip:'Pense na equação como uma balança: um lado é "o que a empresa tem", outro é "de quem é isso" (dívida ou dono).',
+          related:['Fatos contábeis e lançamentos (débito/crédito)','Balanço Patrimonial: estrutura e grupos'] },
+        { name:'Fatos contábeis e lançamentos (débito/crédito)', p:'alta', time:'40 min',
+          video:'busque "método das partidas dobradas exemplo prático" com lançamentos passo a passo',
+          note:'Resolva 5 lançamentos diferentes anotando: conta debitada, conta creditada, e por quê',
+          onde:'Caderno de exercícios resolvidos — deixe uma coluna para "erro cometido"',
+          tip:'Mnemônico: "quem entra credita quem sai debita" — pense em caixa entrando (débito) e saindo (crédito) do ponto de vista do ativo.',
+          related:['Patrimônio: ativo, passivo e PL','Livros contábeis: Diário e Razão'] },
+        { name:'Livros contábeis: Diário e Razão', p:'media', time:'20 min',
+          video:'busque "livro diário e livro razão diferença" (vídeo curto, 5-8 min)',
+          note:'Faça uma tabela comparando os dois livros lado a lado: função, ordem, formato',
+          onde:'Mesma página do caderno de teoria, logo após lançamentos',
+          tip:'Diário = "diário de bordo" (ordem cronológica). Razão = organizado "por razão/conta" (agrupado por conta).',
+          related:['Fatos contábeis e lançamentos (débito/crédito)','Balancete de verificação'] },
+        { name:'Balancete de verificação', p:'media', time:'20 min',
+          video:'busque "balancete de verificação como montar" com exemplo em planilha',
+          note:'Monte um balancete simples de 6 contas e confira se soma de débitos = soma de créditos',
+          onde:'Caderno de exercícios — reserve espaço para refazer esse tipo em outras semanas',
+          tip:'Se não bateu, o erro está sempre em algum lançamento anterior — o balancete só denuncia, não aponta onde.',
+          related:['Livros contábeis: Diário e Razão','DRE completa'] },
+      ]},
+    { n:2, range:'20/07 – 26/07', title:'Contabilidade Geral II', note:'Ajustes e apuração — muito cobrados em questões de cálculo.',
+      topics:[
+        { name:'Depreciação, amortização e exaustão', p:'alta', time:'35 min',
+          video:'busque "depreciação amortização exaustão diferença exemplos" com cálculo de taxa anual',
+          note:'Escreva a fórmula de cada uma + um exemplo de bem (máquina, marca, jazida)',
+          onde:'Caderno de fórmulas — página dedicada só a isso, vai usar de novo em custos',
+          tip:'D de Depreciação = bens tangíveis Duráveis. Amortização = intAngível. Exaustão = recursos que se Esgotam (mina, poço).',
+          related:['CPC 27 — Ativo imobilizado','CPC 04 — Ativo intangível'] },
+        { name:'Provisões e ajustes de exercício', p:'media', time:'25 min',
+          video:'busque "provisões contábeis regime de competência exemplos"',
+          note:'Anote 3 situações do seu trabalho que exigiriam provisão (ex: férias, 13º, contingência)',
+          onde:'Caderno de teoria, próximo a CPC 25 (provisões e contingências)',
+          tip:'Provisão nasce do regime de competência: reconhece o gasto quando ele "nasce", não quando é pago.',
+          related:['CPC 25 — Provisões e contingências','Apuração do resultado (DRE simplificada)'] },
+        { name:'Apuração do resultado (DRE simplificada)', p:'alta', time:'30 min',
+          video:'busque "apuração do resultado do exercício passo a passo" exemplo numérico',
+          note:'Refaça a DRE de uma empresa fictícia simples: receita, custos, despesas, lucro',
+          onde:'Caderno de exercícios — vai comparar com a DRE completa na semana 3',
+          tip:'Pense em "cascata": de cima (receita) vai descontando linha a linha até sobrar o lucro líquido no fim.',
+          related:['Balancete de verificação','DRE completa'] },
+        { name:'Encerramento de contas', p:'media', time:'20 min',
+          video:'busque "encerramento de contas de resultado contabilidade"',
+          note:'Escreva o passo a passo de zerar as contas de resultado transferindo para o PL',
+          onde:'Caderno de teoria, seguindo direto após apuração do resultado',
+          tip:'Só contas de resultado (receita/despesa) encerram no fim do exercício — contas patrimoniais continuam.',
+          related:['Apuração do resultado (DRE simplificada)','Balanço Patrimonial: estrutura e grupos'] },
+      ]},
+    { n:3, range:'27/07 – 02/08', title:'Demonstrações Contábeis', note:'BP e DRE aparecem quase sempre — foco total aqui.',
+      topics:[
+        { name:'Balanço Patrimonial: estrutura e grupos', p:'alta', time:'35 min',
+          video:'busque "estrutura do balanço patrimonial grupos e subgrupos" com modelo visual',
+          note:'Desenhe o esqueleto do BP com todos os grupos (circulante, não circulante, etc.)',
+          onde:'Caderno de teoria — cole esse esquema, vai revisar várias vezes',
+          tip:'Circulante = "circula rápido" (até 1 ano). O resto é não circulante — pense em ordem de liquidez, do mais líquido pro menos.',
+          related:['Patrimônio: ativo, passivo e PL','DFC: método direto e indireto'] },
+        { name:'DRE completa', p:'alta', time:'35 min',
+          video:'busque "DRE demonstração do resultado do exercício completa modelo"',
+          note:'Compare a DRE completa com a simplificada da semana 2 — o que mudou?',
+          onde:'Mesmo caderno de exercícios, ao lado da DRE simplificada',
+          tip:'Decore a ordem com a frase: "Receita bruta vira líquida, menos custo vira bruto, menos despesa vira líquido".',
+          related:['Apuração do resultado (DRE simplificada)','CPC 47 — Receita de contratos com clientes'] },
+        { name:'DFC: método direto e indireto', p:'alta', time:'35 min',
+          video:'busque "demonstração dos fluxos de caixa método direto e indireto exemplo"',
+          note:'Classifique 6 movimentações de caixa em: operacional, investimento ou financiamento',
+          onde:'Caderno de exercícios — essa classificação cai muito em questão de múltipla escolha',
+          tip:'OIF: Operacional (dia a dia), Investimento (compra/venda de ativo), Financiamento (empréstimos e sócios).',
+          related:['Balanço Patrimonial: estrutura e grupos','DMPL e DVA'] },
+        { name:'DMPL e DVA', p:'media', time:'25 min',
+          video:'busque "DMPL demonstração das mutações do patrimônio líquido e DVA diferença"',
+          note:'Escreva em 1 frase o objetivo de cada demonstração (o que ela mostra que as outras não mostram)',
+          onde:'Caderno de teoria — pode ser mais resumido, incidência menor que BP/DRE/DFC',
+          tip:'DMPL mostra o que mexeu no PL. DVA mostra o valor gerado e distribuído (quem "ganhou" com a empresa: governo, sócio, empregado).',
+          related:['DFC: método direto e indireto','CPC 26 — Apresentação das demonstrações'] },
+      ]},
+    { n:4, range:'03/08 – 09/08', title:'Pronunciamentos Contábeis (CPC) I', note:'Estrutura conceitual e os CPCs mais recorrentes.',
+      topics:[
+        { name:'CPC 00 — Estrutura conceitual', p:'alta', time:'30 min',
+          video:'busque "CPC 00 estrutura conceitual resumo" — foco nas características qualitativas',
+          note:'Liste as características qualitativas (relevância, representação fidedigna etc.) com 1 exemplo cada',
+          onde:'Fichário de CPCs — uma folha por pronunciamento, com número + resumo + palavra-chave',
+          tip:'CPC 00 é a "constituição" da contabilidade — todos os outros CPCs derivam dele.',
+          related:['Patrimônio: ativo, passivo e PL','CPC 26 — Apresentação das demonstrações'] },
+        { name:'CPC 26 — Apresentação das demonstrações', p:'alta', time:'30 min',
+          video:'busque "CPC 26 apresentação das demonstrações contábeis resumo"',
+          note:'Anote quais demonstrações são obrigatórias segundo o CPC 26',
+          onde:'Fichário de CPCs — folha própria, ligar com o esquema do BP da semana 3',
+          tip:'CPC 26 é o "manual de como apresentar" — não cria conceito novo, organiza o que já foi definido.',
+          related:['Balanço Patrimonial: estrutura e grupos','DMPL e DVA'] },
+        { name:'CPC 16 — Estoques', p:'alta', time:'30 min',
+          video:'busque "CPC 16 estoques PEPS UEPS custo médio exemplo"',
+          note:'Resolva um exercício de PEPS e outro de custo médio com os mesmos números e compare o resultado',
+          onde:'Caderno de exercícios — essa comparação PEPS x médio é clássica de prova',
+          tip:'PEPS = "primeiro que entra, primeiro que sai" — em época de alta de preço, dá lucro maior (estoque mais caro fica no BP).',
+          related:['Custeio por absorção x variável','CPC 27 — Ativo imobilizado'] },
+        { name:'CPC 27 — Ativo imobilizado', p:'media', time:'25 min',
+          video:'busque "CPC 27 ativo imobilizado reconhecimento e depreciação"',
+          note:'Escreva os critérios de reconhecimento de um item como imobilizado',
+          onde:'Fichário de CPCs — ligar direto com a página de depreciação (semana 2)',
+          tip:'Só vira imobilizado se: (1) gera benefício futuro provável e (2) o custo é mensurável com confiabilidade.',
+          related:['Depreciação, amortização e exaustão','CPC 04 — Ativo intangível'] },
+      ]},
+    { n:5, range:'10/08 – 16/08', title:'Pronunciamentos Contábeis (CPC) II', note:'Continuação — temas que crescem de incidência a cada prova.',
+      topics:[
+        { name:'CPC 04 — Ativo intangível', p:'media', time:'25 min',
+          video:'busque "CPC 04 ativo intangível exemplos marca patente software"',
+          note:'Liste 4 exemplos de intangível do seu próprio ambiente de trabalho',
+          onde:'Fichário de CPCs — ao lado do CPC 27 (imobilizado), para comparar critérios',
+          tip:'Intangível não tem substância física, mas precisa ser identificável e controlável — marca sim, "clima organizacional bom" não.',
+          related:['CPC 27 — Ativo imobilizado','Depreciação, amortização e exaustão'] },
+        { name:'CPC 06 — Arrendamentos', p:'media', time:'30 min',
+          video:'busque "CPC 06 arrendamento mercantil direito de uso exemplo"',
+          note:'Explique com suas palavras por que quase todo arrendamento vira ativo no balanço hoje',
+          onde:'Fichário de CPCs — tema que mudou bastante, vale grifar como "atenção"',
+          tip:'Regra atual: quase tudo que era "fora do balanço" agora entra como ativo de direito de uso + passivo de arrendamento.',
+          related:['CPC 27 — Ativo imobilizado','Balanço Patrimonial: estrutura e grupos'] },
+        { name:'CPC 25 — Provisões e contingências', p:'alta', time:'30 min',
+          video:'busque "CPC 25 provisões passivos e ativos contingentes diferença provável possível remota"',
+          note:'Monte uma tabela: Provável → provisiona / Possível → nota explicativa / Remota → nada',
+          onde:'Fichário de CPCs — essa tabela cai muito em V ou F',
+          tip:'P-P-R: Provável=Provisiona, Possível=Publica em nota, Remota=Repousa (não faz nada).',
+          related:['Provisões e ajustes de exercício','Código de Ética do Contabilista'] },
+        { name:'CPC 47 — Receita de contratos com clientes', p:'media', time:'30 min',
+          video:'busque "CPC 47 receita 5 passos reconhecimento" modelo dos 5 passos',
+          note:'Escreva os 5 passos do modelo de reconhecimento de receita na ordem certa',
+          onde:'Fichário de CPCs — memorize a ordem, é sequencial e cai em questão de ordenar',
+          tip:'5 passos: identifica o contrato → identifica as obrigações → define o preço → aloca o preço → reconhece a receita.',
+          related:['DRE completa','Apuração do resultado (DRE simplificada)'] },
+      ]},
+    { n:6, range:'17/08 – 23/08', title:'Custos e Contabilidade Gerencial', note:'Muito exercício de cálculo — ponto forte para quem já pratica no trabalho.',
+      topics:[
+        { name:'Custeio por absorção x variável', p:'alta', time:'35 min',
+          video:'busque "custeio por absorção x custeio variável diferença exemplo resolvido"',
+          note:'Calcule o custo de um produto pelos dois métodos e compare o resultado no lucro',
+          onde:'Caderno de fórmulas — essa comparação é clássica de estudo de caso na prova',
+          tip:'Absorção = "absorve tudo" (custo fixo entra no produto). Variável = só o que varia com a produção entra no custo do produto.',
+          related:['CPC 16 — Estoques','Ponto de equilíbrio e margem de contribuição'] },
+        { name:'Custos diretos/indiretos, fixos/variáveis', p:'alta', time:'30 min',
+          video:'busque "custos diretos indiretos fixos variáveis exemplos do dia a dia"',
+          note:'Classifique 8 gastos do seu trabalho ou de uma padaria fictícia nessas 4 categorias',
+          onde:'Caderno de exercícios — exemplo da padaria ajuda a fixar (farinha=direto/variável, aluguel=indireto/fixo)',
+          tip:'Direto x indireto = "dá pra apontar no produto?". Fixo x variável = "muda com o volume de produção?"',
+          related:['Custeio por absorção x variável','Ponto de equilíbrio e margem de contribuição'] },
+        { name:'Ponto de equilíbrio e margem de contribuição', p:'alta', time:'35 min',
+          video:'busque "ponto de equilíbrio e margem de contribuição fórmula exemplo"',
+          note:'Resolva 2 exercícios de PE: um em unidades, outro em valor (R$)',
+          onde:'Caderno de fórmulas — grife a fórmula, ela se repete em vários exercícios de gerencial',
+          tip:'Margem de contribuição = Preço − Custo variável. Ponto de equilíbrio = Custo fixo ÷ Margem de contribuição unitária.',
+          related:['Custos diretos/indiretos, fixos/variáveis','Orçamento empresarial'] },
+        { name:'Orçamento empresarial', p:'media', time:'20 min',
+          video:'busque "orçamento empresarial tipos e etapas resumo"',
+          note:'Anote as etapas de um orçamento (planejamento, execução, controle)',
+          onde:'Caderno de teoria — pode ser resumo curto, incidência menor',
+          tip:'Orçamento é planejamento numérico do futuro — pense nele como "a DRE que ainda não aconteceu".',
+          related:['Ponto de equilíbrio e margem de contribuição','Noções de administração'] },
+      ]},
+    { n:7, range:'24/08 – 30/08', title:'Auditoria', note:'Normas técnicas e o papel do auditor.',
+      topics:[
+        { name:'Normas de auditoria (NBC TA)', p:'alta', time:'30 min',
+          video:'busque "normas brasileiras de auditoria NBC TA resumo para concurso"',
+          note:'Liste 3 NBC TAs mais cobradas e o que cada uma trata em 1 linha',
+          onde:'Fichário de CPCs (pode reaproveitar o mesmo fichário para normas técnicas)',
+          tip:'NBC TA = tradução das normas internacionais (ISA) — se souber o "espírito" internacional, acerta a maioria.',
+          related:['Papéis de trabalho e evidências','Código de Ética do Contabilista'] },
+        { name:'Papéis de trabalho e evidências', p:'media', time:'20 min',
+          video:'busque "papéis de trabalho de auditoria evidência suficiente e adequada"',
+          note:'Escreva o que torna uma evidência de auditoria "suficiente e adequada"',
+          onde:'Caderno de teoria — próximo às normas de auditoria',
+          tip:'Suficiente = quantidade. Adequada = qualidade (relevância + confiabilidade). Precisa das duas.',
+          related:['Normas de auditoria (NBC TA)','Controles internos'] },
+        { name:'Parecer / relatório do auditor', p:'alta', time:'30 min',
+          video:'busque "tipos de parecer de auditoria sem ressalva com ressalva adverso"',
+          note:'Monte uma tabela com os 4 tipos de opinião do auditor e quando cada uma se aplica',
+          onde:'Caderno de exercícios — tabela clássica de V ou F na prova',
+          tip:'Do melhor pro pior: Sem ressalva → Com ressalva → Adverso → Abstenção de opinião.',
+          related:['Normas de auditoria (NBC TA)','Perícia contábil: laudo e quesitos'] },
+        { name:'Controles internos', p:'media', time:'20 min',
+          video:'busque "controles internos componentes COSO resumo"',
+          note:'Anote os componentes de controle interno e dê 1 exemplo prático de cada',
+          onde:'Caderno de teoria — pode ligar com sua rotina de controladoria no trabalho',
+          tip:'Controle interno forte reduz o trabalho do auditor — por isso o auditor sempre avalia isso primeiro.',
+          related:['Papéis de trabalho e evidências','Normas de auditoria (NBC TA)'] },
+      ]},
+    { n:8, range:'31/08 – 06/09', title:'Perícia Contábil e Ética Profissional', note:'Ética cai em praticamente toda prova — não pule.',
+      topics:[
+        { name:'Perícia contábil: laudo e quesitos', p:'media', time:'25 min',
+          video:'busque "perícia contábil laudo pericial quesitos resumo"',
+          note:'Escreva a diferença entre laudo e parecer pericial',
+          onde:'Fichário de CPCs/normas — pode juntar com a seção de auditoria',
+          tip:'Quesito é a pergunta feita ao perito; laudo é a resposta técnica fundamentada.',
+          related:['Parecer / relatório do auditor','Responsabilidade profissional'] },
+        { name:'Código de Ética do Contabilista', p:'alta', time:'30 min',
+          video:'busque "código de ética do profissional contábil resumo principais pontos"',
+          note:'Liste 5 deveres e 5 vedações do contador segundo o código de ética',
+          onde:'Fichário de legislação — separe uma seção só de ética, sempre cai',
+          tip:'Pense em ética como "sigilo + independência + zelo" — a maioria das questões gira em torno desses 3 pilares.',
+          related:['Responsabilidade profissional','Lei 12.249 e Resoluções do CFC'] },
+        { name:'Responsabilidade profissional', p:'alta', time:'20 min',
+          video:'busque "responsabilidade civil e profissional do contador resumo"',
+          note:'Anote em que situações o contador responde civil, penal e profissionalmente',
+          onde:'Mesma seção de ética no fichário de legislação',
+          tip:'O contador responde pelos próprios atos técnicos — assinar sem verificar não isenta a responsabilidade.',
+          related:['Código de Ética do Contabilista','Perícia contábil: laudo e quesitos'] },
+      ]},
+    { n:9, range:'07/09 – 13/09', title:'Legislação Profissional e Direito Empresarial', note:'Resoluções do CFC e noções societárias.',
+      topics:[
+        { name:'Lei 12.249 e Resoluções do CFC', p:'alta', time:'30 min',
+          video:'busque "lei 12.249 profissão contábil resumo resoluções CFC"',
+          note:'Anote as principais atribuições exclusivas do contador segundo a legislação',
+          onde:'Fichário de legislação — seção própria, ao lado da ética',
+          tip:'Se a questão fala em "atribuição exclusiva de contador registrado", geralmente está testando essa lei.',
+          related:['Código de Ética do Contabilista','Tipos de sociedades empresárias'] },
+        { name:'Tipos de sociedades empresárias', p:'media', time:'25 min',
+          video:'busque "tipos de sociedades empresárias LTDA S.A. resumo diferenças"',
+          note:'Monte uma tabela comparando LTDA e S.A.: responsabilidade dos sócios, capital, administração',
+          onde:'Caderno de teoria — tabela comparativa ajuda muito em questão de caso',
+          tip:'LTDA = responsabilidade limitada ao capital social. S.A. = capital dividido em ações, mais formal e fiscalizado.',
+          related:['Lei 12.249 e Resoluções do CFC','Direito empresarial básico'] },
+        { name:'Direito empresarial básico', p:'media', time:'20 min',
+          video:'busque "direito empresarial noções básicas para contador resumo"',
+          note:'Anote os conceitos de empresário individual x sociedade, em poucas linhas',
+          onde:'Caderno de teoria — resumo curto, foco maior é nas sociedades',
+          tip:'Empresário individual responde com patrimônio pessoal — por isso muita gente migra para LTDA.',
+          related:['Tipos de sociedades empresárias','Tributos: espécies e competência'] },
+      ]},
+    { n:10, range:'14/09 – 20/09', title:'Direito Tributário e Matemática Financeira', note:'Reta final — foco em fórmulas e questões objetivas.',
+      topics:[
+        { name:'Tributos: espécies e competência', p:'media', time:'25 min',
+          video:'busque "espécies de tributos impostos taxas contribuições resumo"',
+          note:'Liste as 5 espécies de tributo com 1 exemplo cada',
+          onde:'Fichário de legislação — seção tributária separada da profissional',
+          tip:'IATCE: Impostos, tAxas, Contribuições de melhoria, Empréstimo compulsório, Contribuições especiais.',
+          related:['Direito empresarial básico','Simples Nacional, Presumido e Real (noções)'] },
+        { name:'Simples Nacional, Presumido e Real (noções)', p:'media', time:'25 min',
+          video:'busque "simples nacional lucro presumido lucro real diferença resumo"',
+          note:'Monte uma tabela: quem pode optar, base de cálculo, quando compensa cada regime',
+          onde:'Fichário de legislação — tabela comparativa, você já usa isso no trabalho, aproveite',
+          tip:'Simples = "tudo junto" numa guia só. Presumido = lucro estimado por percentual. Real = lucro contábil ajustado de verdade.',
+          related:['Tributos: espécies e competência','Custeio por absorção x variável'] },
+        { name:'Juros simples e compostos', p:'alta', time:'30 min',
+          video:'busque "juros simples e compostos fórmula exercícios resolvidos"',
+          note:'Resolva 3 exercícios: 1 de juros simples, 1 de compostos, 1 misturando os dois',
+          onde:'Caderno de fórmulas — grife bem, é base para VP/VF também',
+          tip:'Simples cresce em linha reta (soma sempre igual). Composto cresce em curva (juros sobre juros).',
+          related:['VP, VF e taxas equivalentes','Estatística descritiva (média, mediana, moda)'] },
+        { name:'VP, VF e taxas equivalentes', p:'alta', time:'30 min',
+          video:'busque "valor presente valor futuro taxas equivalentes fórmula exemplo"',
+          note:'Resolva um exercício de VP e um de conversão de taxa mensal para anual',
+          onde:'Mesma página de fórmulas de juros — são temas que sempre aparecem juntos',
+          tip:'VP "traz pro hoje", VF "joga pro futuro" — pense na linha do tempo, a fórmula só muda a direção.',
+          related:['Juros simples e compostos','Orçamento empresarial'] },
+      ]},
+    { n:11, range:'21/09 – 27/09', title:'Estatística, Administração, Economia + Revisão Geral', note:'Semana da prova: revisão espaçada de tudo + simulados finais.',
+      topics:[
+        { name:'Estatística descritiva (média, mediana, moda)', p:'baixa', time:'20 min',
+          video:'busque "média mediana e moda diferença exemplo rápido"',
+          note:'Calcule as 3 medidas para um conjunto simples de 7 números',
+          onde:'Caderno de fórmulas — resumo bem curto, baixa incidência',
+          tip:'Média "reparte igual", mediana é "o do meio", moda é "o que mais se repete".',
+          related:['Juros simples e compostos','Revisão geral de todos os temas'] },
+        { name:'Noções de administração', p:'baixa', time:'15 min',
+          video:'busque "funções da administração planejar organizar dirigir controlar"',
+          note:'Anote as 4 funções clássicas da administração com 1 exemplo de cada',
+          onde:'Caderno de teoria — resumo curto',
+          tip:'PODC: Planejar, Organizar, Dirigir, Controlar — essa sigla resolve boa parte das questões desse tema.',
+          related:['Orçamento empresarial','Microeconomia básica'] },
+        { name:'Microeconomia básica', p:'baixa', time:'15 min',
+          video:'busque "oferta e demanda microeconomia resumo básico"',
+          note:'Desenhe o gráfico simples de oferta x demanda e o ponto de equilíbrio de mercado',
+          onde:'Caderno de teoria — resumo curto',
+          tip:'Não confunda esse "ponto de equilíbrio de mercado" com o ponto de equilíbrio de custos da semana 6 — são conceitos diferentes!',
+          related:['Ponto de equilíbrio e margem de contribuição','Noções de administração'] },
+        { name:'Revisão geral de todos os temas', p:'alta', time:'90 min',
+          video:'sem vídeo novo — reveja seus próprios resumos e flashcards das 10 semanas anteriores',
+          note:'Refaça o resumo de 1 página de cada matéria de alta incidência (Geral, Demonstrações, CPCs, Custos, Ética)',
+          onde:'Todos os cadernos — essa é a semana de juntar tudo',
+          tip:'Não estude conteúdo novo essa semana — o ganho maior agora vem de revisar o que já saiu errado nos simulados.',
+          related:['Simulados finais'] },
+        { name:'Simulados finais', p:'alta', time:'120 min',
+          video:'sem vídeo — foco 100% em resolver questões no maior volume possível',
+          note:'Anote todo erro num "diário de erros": assunto, por que errou, o que fazer diferente',
+          onde:'Caderno separado só de erros de simulado — é o material mais valioso da última semana',
+          tip:'Errar no simulado agora é lucro — é muito melhor errar aqui do que na prova.',
+          related:['Revisão geral de todos os temas'] },
+      ]},
+  ];
+
+  const NAME_INDEX = {};
+  WEEKS.forEach(w => w.topics.forEach((t,i) => { NAME_INDEX[t.name] = { weekN:w.n, idx:i }; }));
+  const ALL_TOPIC_NAMES = Object.keys(NAME_INDEX);
+  const REAL_TOPIC_IDS = [];
+  WEEKS.forEach(w => w.topics.forEach((t,i) => { REAL_TOPIC_IDS.push('w'+w.n+'-t'+i); }));
+
+  // ---------- State ----------
+  let state = null;
+  let saveTimer = null;
+
+  function topicId(weekN, idx){ return 'w'+weekN+'-t'+idx; }
+
+  function defaultState(){
+    const topics = {};
+    WEEKS.forEach(w => w.topics.forEach((t,i) => { topics[topicId(w.n,i)] = { done:false, note:'', open:false }; }));
+    return {
+      topics,
+      report:{ daysStudied:0, hours:0, questions:0, correctPct:0 },
+      simulados:[],
+      activeWeek:1,
+      view:'week',
+      priorityFilter:'todas',
+      overdueOpen:false
+    };
+  }
+
+  async function loadState(){
+    try{
+      const raw = await Persist.get(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        const base = defaultState();
+        base.topics = Object.assign(base.topics, parsed.topics || {});
+        base.report = Object.assign(base.report, parsed.report || {});
+        base.simulados = parsed.simulados || [];
+        base.activeWeek = parsed.activeWeek || 1;
+        base.priorityFilter = parsed.priorityFilter || 'todas';
+        return base;
+      }
+    }catch(e){ /* nothing saved yet */ }
+    return defaultState();
+  }
+
+  function saveStateDebounced(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async ()=>{ await Persist.set(STORAGE_KEY, JSON.stringify(state)); }, 350);
+  }
+
+  // ---------- Helpers ----------
+  function daysUntilExam(){
+    const diff = Math.ceil((EXAM_DATE - new Date()) / (1000*60*60*24));
+    return diff > 0 ? diff : 0;
+  }
+
+  function parseRangeEnd(rangeStr){
+    const parts = rangeStr.split('–').map(s=>s.trim());
+    const endPart = parts[1] || parts[0];
+    const [dd,mm] = endPart.split('/').map(Number);
+    return new Date(2026, mm-1, dd, 23,59,59);
+  }
+
+  function computeWeekStatus(w){
+    const ids = w.topics.map((t,i)=>topicId(w.n,i));
+    const doneCount = ids.filter(id => state.topics[id] && state.topics[id].done).length;
+    const overdue = parseRangeEnd(w.range) < new Date() && doneCount < ids.length;
+    if(overdue) return 'overdue';
+    if(doneCount === 0) return 'none';
+    if(doneCount === ids.length) return 'complete';
+    return 'partial';
+  }
+
+  function overallProgress(){
+    const done = REAL_TOPIC_IDS.filter(id => state.topics[id] && state.topics[id].done).length;
+    return Math.round((done/REAL_TOPIC_IDS.length)*100);
+  }
+
+  function weekTotalTime(w){
+    const mins = w.topics.reduce((sum,t)=> sum + (parseInt(t.time)||0), 0);
+    const h = Math.floor(mins/60), m = mins%60;
+    return h>0 ? `${h}h${m>0?m+'min':''}` : `${m} min`;
+  }
+
+  // Maps the week's topics onto the fixed weekly routine:
+  // Segunda = aula longa (1h30-2h) · Terça a Sexta = sessões curtas de almoço (20-30min)
+  // Sábado = simulado · Domingo = descanso
+  function buildWeekSchedule(w){
+    const rows = [];
+    const topics = w.topics;
+    if(topics.length === 0) return rows;
+
+    rows.push({ day:'Segunda-feira', dur:'1h30 – 2h', activity:`${topics[0].name} — aula completa (explicação, exemplos, exercícios e revisão)`, type:'long' });
+
+    const shortDays = ['Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira'];
+    const remaining = topics.slice(1);
+
+    remaining.forEach((t,idx)=>{
+      if(idx < shortDays.length){
+        rows.push({ day:shortDays[idx], dur:'20-30 min', activity:`${t.name} — vídeo curto + resumo + questões`, type:'short' });
+      }
+    });
+    // fill leftover weekdays (if this week has fewer than 4 remaining topics) with spaced review
+    for(let i=remaining.length; i<shortDays.length; i++){
+      rows.push({ day:shortDays[i], dur:'20-30 min', activity:'Revisão espaçada do conteúdo estudado nesta semana', type:'short' });
+    }
+
+    rows.push({ day:'Sábado', dur:'~1h', activity:'Simulado (20+ questões no estilo CRC) + correção comentada', type:'sim' });
+    rows.push({ day:'Domingo', dur:'—', activity:'Descanso — sem estudos programados', type:'rest' });
+    return rows;
+  }
+
+  // Splits a topic's total minutes across the study method steps, proportionally.
+  function stepBreakdown(totalMinutes){
+    const shares = [
+      ['Explicação simples', 0.20],
+      ['Exemplo prático', 0.13],
+      ['Exercício fácil', 0.13],
+      ['Exercício médio', 0.13],
+      ['Exercício nível Exame CRC', 0.14],
+      ['Correção comentada', 0.12],
+      ['Revisão + flashcards', 0.15],
+    ];
+    let allocated = 0;
+    const steps = shares.map(([label, pct], idx)=>{
+      let mins = Math.round(totalMinutes * pct);
+      if(idx === shares.length-1){ mins = Math.max(1, totalMinutes - allocated); }
+      else { allocated += mins; }
+      return { label, mins };
+    });
+    return steps;
+  }
+
+  function getOverdueTopics(){
+    const now = new Date();
+    const out = [];
+    WEEKS.forEach(w=>{
+      if(parseRangeEnd(w.range) < now){
+        w.topics.forEach((t,i)=>{
+          const id = topicId(w.n,i);
+          if(!state.topics[id] || !state.topics[id].done){
+            out.push({ name:t.name, weekN:w.n });
+          }
+        });
+      }
+    });
+    return out;
+  }
+
+  function passesFilter(p){
+    return state.priorityFilter === 'todas' || state.priorityFilter === p;
+  }
+
+  // ---------- Navigation ----------
+  function renderTopNav(){
+    const nav = document.getElementById('topNav');
+    nav.innerHTML = '';
+    const items = [
+      {key:'overview', label:'📊 Visão geral'},
+      {key:'simulados', label:'📝 Simulados'},
+    ];
+    items.forEach(it=>{
+      const btn = document.createElement('button');
+      btn.className = 'week-btn' + (state.view === it.key ? ' active' : '');
+      btn.innerHTML = `<span class="wt">${it.label}</span>`;
+      btn.onclick = ()=>{ state.view = it.key; render(); };
+      nav.appendChild(btn);
+    });
+  }
+
+  function renderSidebar(){
+    renderTopNav();
+    const nav = document.getElementById('weekNav');
+    nav.innerHTML = '';
+    WEEKS.forEach(w=>{
+      const btn = document.createElement('button');
+      btn.className = 'week-btn' + (state.view === 'week' && w.n === state.activeWeek ? ' active' : '');
+      const status = computeWeekStatus(w);
+      const dotClass = status==='complete'?'complete':status==='partial'?'partial':status==='overdue'?'overdue':'';
+      btn.innerHTML = `<span class="week-num">${String(w.n).padStart(2,'0')}</span><span class="wt">${w.title}</span><span class="week-dot ${dotClass}"></span>`;
+      btn.onclick = ()=>{ state.view = 'week'; state.activeWeek = w.n; render(); };
+      nav.appendChild(btn);
+    });
+
+    const foot = document.getElementById('sidebarFoot');
+    const r = state.report;
+    foot.innerHTML = `
+      <div class="foot-row"><label>dias estudados</label><input type="number" min="0" id="inpDays" value="${r.daysStudied}"></div>
+      <div class="foot-row"><label>horas estudadas</label><input type="number" min="0" step="0.5" id="inpHours" value="${r.hours}"></div>
+      <div class="foot-row"><label>questões feitas</label><input type="number" min="0" id="inpQuestions" value="${r.questions}"></div>
+      <div class="foot-row"><label>% de acertos</label><input type="number" min="0" max="100" id="inpPct" value="${r.correctPct}"></div>
+      <div class="foot-hint">Atualize esses campos depois de cada sessão — eles não mudam sozinhos.</div>
+    `;
+    document.getElementById('inpDays').onchange = e=>{ state.report.daysStudied = Number(e.target.value)||0; saveStateDebounced(); };
+    document.getElementById('inpHours').onchange = e=>{ state.report.hours = Number(e.target.value)||0; saveStateDebounced(); };
+    document.getElementById('inpQuestions').onchange = e=>{ state.report.questions = Number(e.target.value)||0; saveStateDebounced(); };
+    document.getElementById('inpPct').onchange = e=>{ state.report.correctPct = Math.min(100,Math.max(0,Number(e.target.value)||0)); saveStateDebounced(); };
+  }
+
+  function renderTopBar(){
+    if(state.view === 'week'){
+      const w = WEEKS.find(w=>w.n===state.activeWeek);
+      document.getElementById('viewLabel').textContent = `Semana ${w.n} de ${WEEKS.length}`;
+      document.getElementById('viewTitle').textContent = w.title;
+      document.getElementById('viewSub').innerHTML = `${w.range} · <b>${weekTotalTime(w)}</b> de estudo nessa semana`;
+    } else if(state.view === 'overview'){
+      document.getElementById('viewLabel').textContent = 'Mapa geral';
+      document.getElementById('viewTitle').textContent = 'Todos os assuntos';
+      document.getElementById('viewSub').textContent = `${ALL_TOPIC_NAMES.length} assuntos ao longo de ${WEEKS.length} semanas`;
+    } else {
+      document.getElementById('viewLabel').textContent = 'Desempenho';
+      document.getElementById('viewTitle').textContent = 'Simulados';
+      document.getElementById('viewSub').textContent = 'Registre seus simulados e acompanhe a evolução';
+    }
+    document.getElementById('countdownNum').textContent = daysUntilExam();
+    const pct = overallProgress();
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
+
+  function jumpToTopic(name){
+    const ref = NAME_INDEX[name];
+    if(!ref) return;
+    state.view = 'week';
+    state.activeWeek = ref.weekN;
+    render();
+    setTimeout(()=>{
+      const el = document.getElementById(topicId(ref.weekN, ref.idx));
+      if(el){
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        el.classList.add('flash');
+        setTimeout(()=>el.classList.remove('flash'), 1000);
+        const detail = el.querySelector('.topic-detail');
+        if(detail) detail.classList.add('open');
+      }
+    }, 60);
+  }
+
+  function renderOverdueBanner(container){
+    const overdue = getOverdueTopics();
+    if(overdue.length === 0) return;
+    const banner = document.createElement('div');
+    banner.className = 'overdue-banner';
+    const head = document.createElement('div');
+    head.className = 'head';
+    head.innerHTML = `<span>⚠️ Você está com <b>${overdue.length}</b> assunto(s) pendente(s) de semana(s) já encerradas. Dê prioridade a eles.</span><span>${state.overdueOpen ? '▲' : '▼'}</span>`;
+    head.onclick = ()=>{ state.overdueOpen = !state.overdueOpen; render(); };
+    banner.appendChild(head);
+    const list = document.createElement('div');
+    list.className = 'overdue-list' + (state.overdueOpen ? ' open' : '');
+    overdue.forEach(o=>{
+      const tag = document.createElement('span');
+      tag.className = 'overdue-tag';
+      tag.textContent = `S${o.weekN} · ${o.name}`;
+      tag.onclick = ()=> jumpToTopic(o.name);
+      list.appendChild(tag);
+    });
+    banner.appendChild(list);
+    container.appendChild(banner);
+  }
+
+  function renderFilterRow(container){
+    const row = document.createElement('div');
+    row.className = 'filter-row';
+    row.innerHTML = `<span class="flbl">Filtrar por incidência:</span>`;
+    const opts = [['todas','Todas'],['alta','Alta'],['media','Média'],['baixa','Baixa']];
+    opts.forEach(([key,label])=>{
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip' + (state.priorityFilter===key ? ' active' : '');
+      chip.textContent = label;
+      chip.onclick = ()=>{ state.priorityFilter = key; saveStateDebounced(); render(); };
+      row.appendChild(chip);
+    });
+    container.appendChild(row);
+  }
+
+  // ---------- WEEK VIEW ----------
+  function buildTopicCard(id, t){
+    const entry = state.topics[id] || {done:false, note:'', open:false};
+
+    const card = document.createElement('div');
+    card.className = 'topic-card' + (entry.done ? ' done' : '') + (passesFilter(t.p) ? '' : ' hidden');
+    card.id = id;
+
+    const head = document.createElement('div');
+    head.className = 'topic-head';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = entry.done;
+    cb.onclick = (e)=> e.stopPropagation();
+    cb.onchange = ()=>{
+      if(!state.topics[id]) state.topics[id] = {done:false, note:'', open:false};
+      state.topics[id].done = cb.checked;
+      nameSpan.classList.toggle('done', cb.checked);
+      card.classList.toggle('done', cb.checked);
+      renderSidebar(); renderTopBar(); saveStateDebounced();
+    };
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'topic-name' + (entry.done ? ' done' : '');
+    nameSpan.textContent = t.name;
+
+    const metaRow = document.createElement('span');
+    metaRow.className = 'meta-row';
+    const pill = document.createElement('span');
+    pill.className = 'priority ' + t.p;
+    pill.textContent = t.p === 'alta' ? 'incidência alta' : t.p === 'media' ? 'incidência média' : 'incidência baixa';
+    const timePill = document.createElement('span');
+    timePill.className = 'time-pill';
+    timePill.textContent = '⏱ ' + t.time;
+    metaRow.appendChild(pill);
+    metaRow.appendChild(timePill);
+
+    head.appendChild(cb);
+    head.appendChild(nameSpan);
+    head.appendChild(metaRow);
+
+    const detail = document.createElement('div');
+    detail.className = 'topic-detail' + (entry.open ? ' open' : '');
+
+    const grid = document.createElement('div');
+    grid.className = 'detail-grid';
+    grid.innerHTML = `
+      <div class="detail-item"><div class="k">Vídeo sugerido</div><div class="v">${t.video}</div></div>
+      <div class="detail-item"><div class="k">O que anotar</div><div class="v">${t.note}</div></div>
+      <div class="detail-item"><div class="k">Onde anotar</div><div class="v">${t.onde}</div></div>
+    `;
+    detail.appendChild(grid);
+
+    const tipBox = document.createElement('div');
+    tipBox.className = 'tip-box';
+    tipBox.innerHTML = `<b>Dica para lembrar</b>${t.tip}`;
+    detail.appendChild(tipBox);
+
+    const totalMins = parseInt(t.time) || 0;
+    if(totalMins > 0){
+      const stepsWrap = document.createElement('div');
+      stepsWrap.className = 'steps-wrap';
+      stepsWrap.innerHTML = `<div class="k">Como dividir os ${t.time}</div>`;
+      stepBreakdown(totalMins).forEach(s=>{
+        const widthPct = Math.max(6, Math.round((s.mins/totalMins)*100));
+        const row = document.createElement('div');
+        row.className = 'step-row';
+        row.innerHTML = `<span class="step-time">${s.mins} min</span><span class="step-bar" style="width:${widthPct}px;"></span><span class="step-label">${s.label}</span>`;
+        stepsWrap.appendChild(row);
+      });
+      detail.appendChild(stepsWrap);
+    }
+
+    if(t.related && t.related.length){
+      const relWrap = document.createElement('div');
+      relWrap.className = 'related-wrap';
+      relWrap.innerHTML = `<div class="k">Conectado com</div>`;
+      const tagsWrap = document.createElement('div');
+      tagsWrap.className = 'related-tags';
+      t.related.forEach(rn=>{
+        const tag = document.createElement('span');
+        tag.className = 'related-tag';
+        tag.textContent = rn;
+        tag.onclick = (e)=>{ e.stopPropagation(); jumpToTopic(rn); };
+        tagsWrap.appendChild(tag);
+      });
+      relWrap.appendChild(tagsWrap);
+      detail.appendChild(relWrap);
+    }
+
+    const noteArea = document.createElement('div');
+    noteArea.className = 'note-area';
+    noteArea.innerHTML = `<div class="k">Suas anotações pessoais</div>`;
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Dúvidas, pegadinhas ou o que você quiser lembrar sobre esse assunto…';
+    ta.value = entry.note || '';
+    ta.onclick = (e)=> e.stopPropagation();
+    ta.oninput = ()=>{
+      if(!state.topics[id]) state.topics[id] = {done:false, note:'', open:false};
+      state.topics[id].note = ta.value; saveStateDebounced();
+    };
+    noteArea.appendChild(ta);
+    detail.appendChild(noteArea);
+
+    head.onclick = ()=>{
+      detail.classList.toggle('open');
+      if(!state.topics[id]) state.topics[id] = {done:false, note:'', open:false};
+      state.topics[id].open = detail.classList.contains('open');
+      saveStateDebounced();
+    };
+
+    card.appendChild(head);
+    card.appendChild(detail);
+    return card;
+  }
+
+  function daySlug(day){
+    return day.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9]+/g,'-');
+  }
+
+  function renderWeekView(content){
+    const w = WEEKS.find(w=>w.n===state.activeWeek);
+
+    const header = document.createElement('div');
+    header.className = 'week-header';
+    header.innerHTML = `<h3>${w.title}</h3><p class="week-note">${w.note}</p>`;
+    content.appendChild(header);
+
+    const schedule = buildWeekSchedule(w);
+    const schedWrap = document.createElement('div');
+    schedWrap.className = 'day-schedule';
+    schedWrap.innerHTML = `<div class="day-schedule-title">Como distribuir esta semana</div>`;
+    schedule.forEach(row=>{
+      const r = document.createElement('div');
+      r.className = 'day-row ' + row.type;
+      r.innerHTML = `<span class="day-name">${row.day}</span><span class="day-dur">${row.dur}</span><span class="day-activity">${row.activity}</span>`;
+      schedWrap.appendChild(r);
+    });
+    content.appendChild(schedWrap);
+
+    renderFilterRow(content);
+
+    const spine = document.createElement('div');
+    spine.className = 'topics-spine';
+
+    // real curriculum topics (Monday's deep dive + Tue-Fri short sessions)
+    w.topics.forEach((t,i)=>{
+      const id = topicId(w.n,i);
+      spine.appendChild(buildTopicCard(id, t));
+    });
+
+    // synthetic cards for schedule rows that aren't tied to a real topic:
+    // leftover "revisão espaçada" filler days + the Saturday simulado.
+    // This keeps every row shown in "Como distribuir esta semana" also trackable below.
+    const weekTopicNames = w.topics.map(t=>t.name);
+    schedule.forEach(row=>{
+      if(row.type === 'short' && row.activity.startsWith('Revisão espaçada')){
+        const id = 'w'+w.n+'-'+daySlug(row.day);
+        const synthetic = {
+          name: `Revisão espaçada — ${row.day}`,
+          p: 'media',
+          time: '20-30 min',
+          video: 'sem vídeo novo — revise seus próprios resumos e flashcards desta semana',
+          note: 'Reescreva de memória os pontos principais dos assuntos estudados nesta semana, sem consultar o caderno primeiro',
+          onde: 'Mesmos cadernos da semana — não crie página nova',
+          tip: 'Tente lembrar antes de checar — o esforço de recuperar da memória é o que fixa o conteúdo (Active Recall).',
+          related: weekTopicNames,
+        };
+        spine.appendChild(buildTopicCard(id, synthetic));
+      }
+      if(row.type === 'sim'){
+        const id = 'w'+w.n+'-'+daySlug(row.day);
+        const synthetic = {
+          name: 'Simulado semanal (Sábado)',
+          p: 'alta',
+          time: '60 min',
+          video: 'sem vídeo — foco em resolver 20+ questões no estilo do Exame CRC',
+          note: 'Anote cada erro no diário de erros: assunto, motivo do erro, o que fazer diferente da próxima vez',
+          onde: 'Caderno separado só de erros de simulado',
+          tip: 'Corrija na hora, com o erro ainda fresco na memória — fixa muito mais do que corrigir depois.',
+          related: weekTopicNames,
+        };
+        spine.appendChild(buildTopicCard(id, synthetic));
+      }
+    });
+
+    content.appendChild(spine);
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'reset-link';
+    resetBtn.textContent = 'Zerar progresso desta semana';
+    resetBtn.onclick = ()=>{
+      w.topics.forEach((t,i)=>{ state.topics[topicId(w.n,i)] = {done:false, note:'', open:false}; });
+      schedule.forEach(row=>{
+        if((row.type === 'short' && row.activity.startsWith('Revisão espaçada')) || row.type === 'sim'){
+          state.topics['w'+w.n+'-'+daySlug(row.day)] = {done:false, note:'', open:false};
+        }
+      });
+      render(); saveStateDebounced();
+    };
+    content.appendChild(resetBtn);
+  }
+
+  // ---------- OVERVIEW VIEW ----------
+  function renderOverviewView(content){
+    renderFilterRow(content);
+
+    const table = document.createElement('table');
+    table.className = 'overview-table';
+    table.innerHTML = `<thead><tr><th></th><th>Semana</th><th>Assunto</th><th>Incidência</th><th>Tempo</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    WEEKS.forEach(w=>{
+      w.topics.forEach((t,i)=>{
+        const id = topicId(w.n,i);
+        const entry = state.topics[id] || {done:false};
+        const tr = document.createElement('tr');
+        if(!passesFilter(t.p)) tr.classList.add('hidden');
+
+        const tdCheck = document.createElement('td');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.className = 'ov-check'; cb.checked = entry.done;
+        cb.onchange = ()=>{ state.topics[id].done = cb.checked; renderSidebar(); renderTopBar(); saveStateDebounced(); };
+        tdCheck.appendChild(cb);
+
+        const tdWeek = document.createElement('td'); tdWeek.textContent = 'S' + w.n;
+        const tdName = document.createElement('td'); tdName.className = 'ov-name'; tdName.textContent = t.name;
+        tdName.onclick = ()=> jumpToTopic(t.name);
+
+        const tdPrio = document.createElement('td');
+        const pill = document.createElement('span');
+        pill.className = 'priority ' + t.p;
+        pill.textContent = t.p === 'alta' ? 'alta' : t.p === 'media' ? 'média' : 'baixa';
+        tdPrio.appendChild(pill);
+
+        const tdTime = document.createElement('td'); tdTime.textContent = t.time;
+
+        tr.appendChild(tdCheck); tr.appendChild(tdWeek); tr.appendChild(tdName); tr.appendChild(tdPrio); tr.appendChild(tdTime);
+        tbody.appendChild(tr);
+      });
+    });
+    table.appendChild(tbody);
+    content.appendChild(table);
+  }
+
+  // ---------- SIMULADOS VIEW ----------
+  function renderSimuladosView(content){
+    const formWrap = document.createElement('div');
+    formWrap.className = 'sim-form';
+    formWrap.innerHTML = `
+      <h4>Registrar novo simulado</h4>
+      <div class="sim-grid">
+        <div class="sim-field"><label>Data</label><input type="date" id="simDate"></div>
+        <div class="sim-field"><label>Total de questões</label><input type="number" id="simTotal" min="1" value="20"></div>
+        <div class="sim-field"><label>Acertos</label><input type="number" id="simCorrect" min="0" value="0"></div>
+      </div>
+      <div class="sim-field" style="margin-bottom:10px;">
+        <label>Assuntos que errou (separe por vírgula)</label>
+        <textarea id="simWeak" placeholder="ex: CPC 16 — Estoques, Juros simples e compostos"></textarea>
+      </div>
+      <button class="sim-submit" id="simSubmit">Salvar simulado</button>
+    `;
+    content.appendChild(formWrap);
+    document.getElementById('simDate').valueAsDate = new Date();
+
+    document.getElementById('simSubmit').onclick = ()=>{
+      const date = document.getElementById('simDate').value || new Date().toISOString().slice(0,10);
+      const total = Number(document.getElementById('simTotal').value)||0;
+      const correct = Number(document.getElementById('simCorrect').value)||0;
+      const weakRaw = document.getElementById('simWeak').value.trim();
+      const weakSubjects = weakRaw ? weakRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+      if(total <= 0) return;
+      state.simulados.push({ id:'sim'+Date.now(), date, total, correct, weakSubjects, weekAtTime: state.activeWeek });
+      saveStateDebounced();
+      render();
+    };
+
+    // table of simulados
+    if(state.simulados.length){
+      const table = document.createElement('table');
+      table.className = 'sim-table';
+      table.innerHTML = `<thead><tr><th>Data</th><th>Acertos</th><th>Assuntos a revisar</th><th></th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      state.simulados.slice().sort((a,b)=> a.date < b.date ? 1 : -1).forEach(s=>{
+        const pct = Math.round((s.correct/s.total)*100);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.date}</td>
+          <td><span class="sim-bar-track"><span class="sim-bar-fill" style="width:${pct}%"></span></span>${s.correct}/${s.total} (${pct}%)</td>
+          <td>${s.weakSubjects.length ? s.weakSubjects.join(', ') : '—'}</td>
+          <td><button class="sim-del" data-id="${s.id}">remover</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      content.appendChild(table);
+
+      table.querySelectorAll('.sim-del').forEach(btn=>{
+        btn.onclick = ()=>{
+          state.simulados = state.simulados.filter(s=>s.id !== btn.dataset.id);
+          saveStateDebounced(); render();
+        };
+      });
+
+      // subject analysis: frequency of weak subjects
+      const freq = {};
+      state.simulados.forEach(s=> s.weakSubjects.forEach(name=>{ freq[name] = (freq[name]||0)+1; }));
+      const sortedWeak = Object.entries(freq).sort((a,b)=> b[1]-a[1]);
+      const criticos = sortedWeak.filter(([,c])=>c>=3).map(([n])=>n);
+      const fracos = sortedWeak.filter(([,c])=>c===2 || c===1).map(([n])=>n).filter(n=>!criticos.includes(n));
+      const errFail = new Set(Object.keys(freq));
+      const fortes = ALL_TOPIC_NAMES.filter(n => !errFail.has(n) && state.topics[topicId(NAME_INDEX[n].weekN, NAME_INDEX[n].idx)]?.done).slice(0,8);
+
+      const analysis = document.createElement('div');
+      analysis.className = 'subj-analysis';
+      analysis.innerHTML = `
+        <div class="subj-card critico">
+          <h5>Assuntos críticos</h5>
+          ${criticos.length ? '<ul>'+criticos.map(n=>`<li>${n}</li>`).join('')+'</ul>' : '<div class="empty">nenhum ainda — erro em 3+ simulados aparece aqui</div>'}
+        </div>
+        <div class="subj-card fraco">
+          <h5>Assuntos fracos</h5>
+          ${fracos.length ? '<ul>'+fracos.map(n=>`<li>${n}</li>`).join('')+'</ul>' : '<div class="empty">nenhum registrado ainda</div>'}
+        </div>
+        <div class="subj-card forte">
+          <h5>Assuntos fortes</h5>
+          ${fortes.length ? '<ul>'+fortes.map(n=>`<li>${n}</li>`).join('')+'</ul>' : '<div class="empty">conclua assuntos sem erros para vê-los aqui</div>'}
+        </div>
+      `;
+      content.appendChild(analysis);
+    } else {
+      const empty = document.createElement('p');
+      empty.style.cssText = 'font-size:12.5px;color:var(--ink-soft);';
+      empty.textContent = 'Nenhum simulado registrado ainda. Depois do seu primeiro simulado de sábado, registre aqui pra acompanhar sua evolução.';
+      content.appendChild(empty);
+    }
+  }
+
+  function renderContent(){
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+    renderOverdueBanner(content);
+    if(state.view === 'week') renderWeekView(content);
+    else if(state.view === 'overview') renderOverviewView(content);
+    else renderSimuladosView(content);
+  }
+
+  function render(){
+    renderSidebar();
+    renderTopBar();
+    renderContent();
+  }
+
+  (async function init(){
+    state = await loadState();
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
